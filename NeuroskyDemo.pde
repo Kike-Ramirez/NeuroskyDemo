@@ -17,6 +17,8 @@ PFont fontF6;
 float levelON = 75;
 float numSamples = 200;
 
+boolean testing = true;
+
 ArrayList attSamples, sigSamples;
 
 ArrayList   delta, theta, lowAlpha, highAlpha, lowBeta, highBeta, lowGamma, midGamma;
@@ -26,7 +28,7 @@ ArrayList   delta, theta, lowAlpha, highAlpha, lowBeta, highBeta, lowGamma, midG
 void setup() {
   size(1920, 1080);
   // attSamples = new ArrayList();
-  mindset = new MindSet(this, "COM5");
+  // if (!testing) mindset = new MindSet(this, "COM5");
   attSamples = new ArrayList();
   sigSamples = new ArrayList();
   delta = new ArrayList();
@@ -50,6 +52,8 @@ void setup() {
   textFont(fontF6);
   
   status = 0;
+  
+  myPort.write('1');
   
 }
 
@@ -153,16 +157,44 @@ void draw() {
     strokeWeight(1);
     radius = map(levelON, 0, 100, height, 285);
     ellipse(width/2, height/2, radius, radius);
-    
-    attSamples.add(attention);
-    if (attSamples.size() > numSamples) attSamples.remove(0);
   
 
   
   }
   
+  if (!testing) attSamples.add(attention);
+  else attSamples.add(100 * noise(frameCount/100));
+  
+  if (attSamples.size() > numSamples) attSamples.remove(0);
+  
+  if (testing) updateTesting();
+  
   
 }
+
+void updateTesting() {
+
+  sigSamples.add(100 * noise(frameCount/300 + 0));
+  if (sigSamples.size() > numSamples) sigSamples.remove(0);  
+  delta.add(int(100 * noise(frameCount/300 + 50)));
+  if (delta.size() > numSamples) delta.remove(0);
+  theta.add(int(100 * noise(frameCount/300 + 100)));
+  if (theta.size() > numSamples) theta.remove(0);
+  lowAlpha.add(int(100 * noise(frameCount/300 + 150)));
+  if (lowAlpha.size() > numSamples) lowAlpha.remove(0);
+  highAlpha.add(int(100 * noise(frameCount/300 + 200)));
+  if (highAlpha.size() > numSamples) highAlpha.remove(0);
+  lowBeta.add(int(100 * noise(frameCount/300 + 250)));
+  if (lowBeta.size() > numSamples) lowBeta.remove(0);
+  highBeta.add(int(100 * noise(frameCount/300 + 300)));
+  if (highBeta.size() > numSamples) highBeta.remove(0);
+  lowGamma.add(int(100 * noise(frameCount/300 + 350)));
+  if (lowGamma.size() > numSamples) lowGamma.remove(0);
+  midGamma.add(int(100 * noise(frameCount/300 + 400)));
+  if (midGamma.size() > numSamples) midGamma.remove(0);
+
+}
+
 
 
 void keyPressed() {
