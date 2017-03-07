@@ -1,34 +1,50 @@
+/*
+
+Demo uso Neurosky MindWave
+FULLSIX
+
+Autor: K. Ramírez
+Fecha: 7/3/2017
+*/
+
+
+// Importación librerías
 import processing.serial.*;
 import pt.citar.diablu.processing.mindset.*;
-import processing.serial.*;
 
+
+// Definición de objetos y variables
 MindSet mindset;
 float attention, attentionTarget;
 float strength;
 PImage bombilla, bombillaluz;
-
-int status;
-
-Serial myPort;  // Create object from Serial class
-
 color naranjaF6 = color(251, 132, 1);
 color grisF6 = color(48, 52, 53);
 PFont fontF6;
-float levelON = 75;
-float numSamples = 200;
+float fontSize1, fontSize2;
+float levelON = 75;          // Porcentaje de concentración necesario para encender la luz
+float numSamples = 200;      // Número de muestras a guardar en los arrays
 
-boolean testing = true;
+boolean testing = true;      // Modo de testing (sin diadema).
 
-ArrayList attSamples, sigSamples;
+// Arraylist para guardar todos los datos de las graficas
+ArrayList attSamples, sigSamples, delta, theta, lowAlpha, highAlpha, lowBeta, highBeta, lowGamma, midGamma;
 
-ArrayList   delta, theta, lowAlpha, highAlpha, lowBeta, highBeta, lowGamma, midGamma;
+int status;      // Estados: 0/ Pantalla Inicial, 1/ Gráficas, 2/ Juego
 
+Serial myPort;  // Objeto Puerto Serie
+ 
 
 
 void setup() {
-  size(1920, 1080);
-  // attSamples = new ArrayList();
-  // if (!testing) mindset = new MindSet(this, "COM5");
+  
+  // Tamaño de ventana ajustable
+  size(1366, 768);
+  
+  // Definimos el objeto Mindset (chequear puerto COM)
+  if (!testing) mindset = new MindSet(this, "COM5");
+  
+  // Inicializamos los arraylists
   attSamples = new ArrayList();
   sigSamples = new ArrayList();
   delta = new ArrayList();
@@ -40,198 +56,222 @@ void setup() {
   lowGamma = new ArrayList();
   midGamma = new ArrayList();
   
+  // Usar esto para listar los puertos series al configurar
   // println(Serial.list());
   
-  String portName = Serial.list()[1];   
+  // Inicializamos nuestro puerto serie
+  String portName = Serial.list()[0];   
   myPort = new Serial(this, portName, 9600);
   
+  // Cargamos la customización
   bombilla = loadImage("iconoBombilla.png");
   bombillaluz = loadImage("iconoBombillaIluminada.png");
-  
   fontF6 = loadFont("Gotham-Black-48.vlw");
   textFont(fontF6);
+  fontSize1 = 0.04 * width;
+  fontSize2 = 0.015 * width;
   
+  // Definimos el estado inicial (pantalla de bienvenida)
   status = 0;
-  
-  myPort.write('1');
-  
+    
 }
 
 
 void draw() {
   
+  
+  // Acciones a realizar en la pantalla de bienvenida
   if (status == 0) {
   
+    // Fondo naranja FULLSIX
     background(naranjaF6);
     textAlign(CENTER, CENTER);
+    // Texto gris FULLSIX
     fill(grisF6);
     noStroke();
     
+    // Dibujar texto carátula
     text("FULLSIX EEG Sensor DEMO", width/2, height/2);
+  
+  }
+  
+  // Acciones a realizar en la pantalla de gráficas
+  if (status == 1) {
+  
+    // Fondo gris FULLSIX
+    background(grisF6);
+    // Texto blanco
+    fill(255);
+    textSize(fontSize2);
+    textAlign(CENTER, TOP);
+    
+    // Definimos parametros de maquetación
+    // m: margen
+    // p: anchura de gráfica
+    float m = 0.1;
+    float p = 0.2;
+    
+    // Dibujamos todas las gráficas en rejilla de 9x9 con sus textos debajo
+    drawDiagram2(delta, m * width, m * height, p * width, p * height);
+    text("delta",  (m + p * 0.5) * width, (m + p + 0.01) * height);
+    drawDiagram2(theta, (m) * width, (2 * m + p) * height, p * width, p * height);
+    text("theta",  (m + p * 0.5) * width, (2 * m + 2 * p + 0.01) * height);
+    drawDiagram2(lowAlpha, (m) * width, (3 * m + 2 * p) * height, p * width, p * height);
+    text("low alpha",  (m + p * 0.5) * width, (3 * m + 3 * p + 0.01) * height);
+
+    drawDiagram2(highAlpha, (2 * m + p) * width, m * height, p * width, p * height);
+    text("high alpha",  (2 * m + p * 1.5) * width, (m + p + 0.01) * height);
+    drawDiagram2(lowBeta, (2 * m + p) * width, (2 * m + p) * height, p * width, p * height);
+    text("low beta",  (2 * m + p * 1.5) * width, (2 * m + 2 * p + 0.01) * height);
+    drawDiagram2(highBeta, (2 * m + p) * width, (3 * m + 2 * p) * height, p * width, p * height);
+    text("high beta", (2 * m + p * 1.5) * width, (3 * m + 3 * p + 0.01) * height);
+
+    drawDiagram2(lowGamma, (3 * m + 2 * p) * width, m * height, p * width, p * height);
+    text("low gamma",  (3 * m + p * 2.5) * width, (m + p + 0.01) * height);
+    drawDiagram2(midGamma, (3 * m + 2 * p) * width, (2 * m + p) * height, p * width, p * height);
+    text("mid gamma",  (3 * m + p * 2.5) * width, (2 * m + 2 * p + 0.01) * height);
+    drawDiagram(sigSamples, (3 * m + 2 * p) * width, (3 * m + 2 * p) * height, p * width, p * height);
+    text("signal level",  (3 * m + p * 2.5) * width, (3 * m + 3 * p + 0.01) * height);
+
   }
   
   
-  if (status == 1) {
-  
-    background(grisF6);
-    fill(255);
-    textSize(30);
-    textAlign(CENTER, CENTER);
+  // Acciones a realizar en la pantalla de "Juego Bombilla"
+  else if (status == 2) {
     
-    drawDiagram2(delta, 50, height/2 - 380, 400, 200);
-    text("delta",  50 + 200, height/2 - 130);
-    drawDiagram2(theta, 50, height/2 - 80, 400, 200);
-    text("theta",  50 + 200, height/2 + 170);
-    drawDiagram2(lowAlpha, 50, height/2 + 220, 400, 200);
-    text("low alpha",  50 + 200, height/2 + 470);
-
-    drawDiagram2(highAlpha, 50 + width/3, height/2 - 380, 400, 200);
-    text("high alpha",  50 + width/3 + 200, height/2 - 130);
-    drawDiagram2(lowBeta, 50 + width/3, height/2 - 80, 400, 200);
-    text("low beta",  50 + width/3 + 200, height/2 + 170);
-    drawDiagram2(highBeta, 50 + width/3, height/2 + 220, 400, 200);
-    text("high beta",  50 + width/3 + 200, height/2 + 470);
-
-    drawDiagram2(lowGamma, 50 + width*2/3, height/2 - 380, 400, 200);
-    text("low gamma",  50 + width*2/3 + 200, height/2 - 130);
-    drawDiagram2(midGamma, 50 + width*2/3, height/2 - 80, 400, 200);
-    text("mid gamma",  50 + width*2/3 + 200, height/2 + 170);
-    drawDiagram(sigSamples, 50 + width*2/3, height/2 + 220, 400, 200);
-    text("signal level",  50 + width*2/3 + 200, height/2 + 470);
-
-}
-  
-  if (status == 2) {
+    // Fondo naranja FULLSIX
     background(naranjaF6);
-    textSize(60);
+    textSize(fontSize1);
     
-   
+    // Dibujamos el logo de la bombilla
     image(bombilla, 0, 0, width, height);
-    
+
+    // Recalculamos el nivel de concentración de esta manera para que tenga cambio continuo
     attention += (attentionTarget - attention) * 0.01;
     
+    // Dibujamos el círculo punteado
     float radius = map(attention, 0, 100, height, 285);
-    float colorLevel = map(attention, 0, 100, 10, 255);
-    
-    //fill(colorLevel, 0, 0, colorLevel);
-    //stroke(colorLevel, 0, 0, colorLevel);
-    //ellipse(width/2, height/2, radius, radius);
     drawCircle(radius);
     
-    textAlign(CENTER,CENTER);
-    
-    if (attention >= levelON) {
-      
-      fill(255);
-      text("¡CONSEGUIDO!", width/2, height - 200);
-      myPort.write('1');
-      image(bombillaluz, 0, 0, width, height);
-      
-    }
-    else myPort.write('0');
-    
-    fill(255);
-    if (strength <= 60) {
-      text("¡AJUSTA TU DIADEMA!", width/2, height - 200);
-      attention = 0;
-    }
-  
-  
-    fill(255);  
-    textAlign(CENTER, CENTER);
-    text("CONCÉNTRATE EN LA BOMBILLA PARA ENCENDERLA", width/2, 100);
-    
-    fill(255);
-    textSize(30);
-    textAlign(LEFT, CENTER);
-    if (attention < 10) text("Concentración:  " + int(attention) + " %", 50, height/2 + 50);
-    else text("Concentración: " + int(attention) + " %", 50, height/2 + 50);
-    drawDiagram(attSamples, 50, height/2 - 80, 300, 100);
-    
-    textAlign(RIGHT, CENTER);
-    text("Señal: " + strength + "%", width - 50, height/2 + 50);
-    drawDiagram(sigSamples, width - 50 - 300, height/2 - 80, 300, 100);
-  
+    // Dibujar círculo con el nivel necesario para ganar
     noFill();
     stroke(grisF6);
     strokeWeight(1);
     radius = map(levelON, 0, 100, height, 285);
     ellipse(width/2, height/2, radius, radius);
+    
+    textAlign(CENTER,CENTER);
+    
+    // Si superamos el umbral de concentración
+    if (attention >= levelON) {
+      
+      // Escribir texto, añadir logo y enviar dato a puerto serie
+      text("¡CONSEGUIDO!", 0.5 * width, 0.8 * height);
+      myPort.write('1');
+      image(bombillaluz, 0, 0, width, height);
+      
+    }
+    
+    // En otro caso solo enviar dato a puerto serie
+    else myPort.write('0');
+    
+    
+    // Si el nivel de señal es bajo, mostrar texto indicativo
+    if (strength <= 60) {
+      text("¡AJUSTA TU DIADEMA!", 0.5 * width, 0.8 * height);
+      attention = 0;
+    }
   
-
-  
+    // Escribir texto fijo con instrucciones en la parte superior  
+    text("CONCÉNTRATE EN LA BOMBILLA \n PARA ENCENDERLA", 0.5 * width, 0.15 * height);
+    
+    // Dibujar gráfica de nivel de concentración con su texto
+    textSize(fontSize2);
+    textAlign(LEFT, CENTER);
+    if (attention < 10) text("Concentración:  " + int(attention) + " %", 0.02 * width, 0.56 * height);
+    else text("Concentración: " + int(attention) + " %", 0.02 * width, 0.56 * height);
+    drawDiagram(attSamples, 0.02 * width, 0.38 * height, 0.15 * width, 0.15 * height);
+    
+    // Dibujar gráfica de nivel de señal con su texto
+    textAlign(RIGHT, CENTER);
+    text("Señal: " + strength + "%", 0.98 * width, 0.56 * height);
+    drawDiagram(sigSamples, 0.83 * width, 0.38 * height, 0.15 * width, 0.15 * height);
+ 
   }
   
-  if (!testing) attSamples.add(attention);
-  else attSamples.add(100 * noise(frameCount/100));
-  
+  // Siempre añadir aquí la muestra de concentración a su array (el resto lo hacemos en los eventos respectivos, esta se trata distinta)
+  attSamples.add(attention);
   if (attSamples.size() > numSamples) attSamples.remove(0);
   
+  // Si estamos en modo Testing generamos valores aleatorios para todas las gráficas
   if (testing) updateTesting();
   
   
 }
 
+// Función auxiliar que genera valores aleatorios para todas las gráficas y los
+// añade al array
 void updateTesting() {
-
-  sigSamples.add(100 * noise(frameCount/300 + 0));
+  
+  attentionTarget = 50.0 + 50 * sin(frameCount/100.0f);
+  
+  sigSamples.add(random(100));
   if (sigSamples.size() > numSamples) sigSamples.remove(0);  
-  delta.add(int(100 * noise(frameCount/300 + 50)));
+  delta.add(int(random(100)));
   if (delta.size() > numSamples) delta.remove(0);
-  theta.add(int(100 * noise(frameCount/300 + 100)));
+  theta.add(int(random(100)));
   if (theta.size() > numSamples) theta.remove(0);
-  lowAlpha.add(int(100 * noise(frameCount/300 + 150)));
+  lowAlpha.add(int(random(100)));
   if (lowAlpha.size() > numSamples) lowAlpha.remove(0);
-  highAlpha.add(int(100 * noise(frameCount/300 + 200)));
+  highAlpha.add(int(random(100)));
   if (highAlpha.size() > numSamples) highAlpha.remove(0);
-  lowBeta.add(int(100 * noise(frameCount/300 + 250)));
+  lowBeta.add(int(random(100)));
   if (lowBeta.size() > numSamples) lowBeta.remove(0);
-  highBeta.add(int(100 * noise(frameCount/300 + 300)));
+  highBeta.add(int(random(100)));
   if (highBeta.size() > numSamples) highBeta.remove(0);
-  lowGamma.add(int(100 * noise(frameCount/300 + 350)));
+  lowGamma.add(int(random(100)));
   if (lowGamma.size() > numSamples) lowGamma.remove(0);
-  midGamma.add(int(100 * noise(frameCount/300 + 400)));
+  midGamma.add(int(random(100)));
   if (midGamma.size() > numSamples) midGamma.remove(0);
 
 }
 
 
-
+// Gestión de teclado
 void keyPressed() {
+  
+  // Si pulsamos 'q', salir y cerrar todo
   if (key == 'q') {
-    mindset.quit();
+    if (!testing) mindset.quit();
+    myPort.write('0');
     exit();
   }
-  
-  if (key == ' ') {
-  
-    status++;
-    if (status == 3) status = 1;
-  }
-  
-  else saveFrame();
+}
+
+// Si pulsamos el ratón cambiamos de pantalla
+void mousePressed() {
+
+  status++;
+  if (status == 3) status = 1;
 
 }
 
-
+// Evento que actualiza la señal de mindset
 public void poorSignalEvent(int sig) {
-  println("PoorSignalEvent: " + sig);
   strength = map(sig, 200, 0, 0, 100);
   sigSamples.add(strength);
   if (sigSamples.size() > numSamples) sigSamples.remove(0);  
 }
 
+// Evento que actualiza el nivel de concentración medido
 public void attentionEvent(int attentionLevel) {
-  println("Attention Level: " + attentionLevel);
   attentionTarget = attentionLevel;
-//  attSamples.add(attention);
-//  if (attSamples.size() > numSamples) {
-//    attSamples.remove(0);
-//  }
 }
 
+// Función que dibuja un círculo punteado y giratorio
 public void drawCircle(float radius) 
 {
+  // Número de segmentos para dibujar el círculo
   int nSegmentos = 40;
   
   if (radius > height) radius = height;
@@ -250,17 +290,20 @@ public void drawCircle(float radius)
   popMatrix();
 }
 
-public void drawDiagram(ArrayList list, int x_, int y_, int w_, int h_) {
+
+// Función que dibuja un diagrama con los datos de un array de flotantes, posiciones, anchura y altura
+public void drawDiagram(ArrayList list, float x_, float y_, float w_, float h_) {
 
   strokeWeight(2);
   if (status == 2) stroke(grisF6);
-  else stroke(naranjaF6);
+  else stroke(255);
   noFill();
   line(x_, y_ + h_, x_+w_, y_ + h_);
   line(x_, y_, x_, y_ + h_);
   
-  strokeWeight(4);
-  stroke(255);
+  strokeWeight(3);
+  if (status == 2) stroke(255);
+  else stroke(naranjaF6);
   for (int i = 0; i < list.size()-1; i++) {
   
     int x1 = int( map(i, 0, list.size()-1, x_, x_ + w_) );
@@ -276,11 +319,12 @@ public void drawDiagram(ArrayList list, int x_, int y_, int w_, int h_) {
   }
 }
 
-public void drawDiagram2(ArrayList list, int x_, int y_, int w_, int h_) {
+// Función que dibuja un diagrama con los datos de un array de enteros, posiciones, anchura y altura
+public void drawDiagram2(ArrayList list, float x_, float y_, float w_, float h_) {
 
   strokeWeight(2);
   if (status == 2) stroke(grisF6);
-  else stroke(naranjaF6);
+  else stroke(255);
   noFill();
   line(x_, y_ + h_, x_+w_, y_ + h_);
   line(x_, y_, x_, y_ + h_);
@@ -293,8 +337,9 @@ public void drawDiagram2(ArrayList list, int x_, int y_, int w_, int h_) {
   
   }
   
-  strokeWeight(4);
-  stroke(255);
+  strokeWeight(3);
+  if (status == 2) stroke(255);
+  else stroke(naranjaF6);
   for (int i = 0; i < list.size()-1; i++) {
   
     int x1 = int( map(i, 0, list.size()-1, x_, x_ + w_) );
@@ -303,7 +348,6 @@ public void drawDiagram2(ArrayList list, int x_, int y_, int w_, int h_) {
 
     int x2 = int( map(i+1, 0, list.size()-1, x_, x_ + w_) );
     float v2 = ((Integer)list.get(i+1)).intValue();
-    println(v2);
     int y2 = int( map(v2, 0, maxList, y_ + h_, y_) );
     
     line(x1, y1, x2, y2);
@@ -311,9 +355,9 @@ public void drawDiagram2(ArrayList list, int x_, int y_, int w_, int h_) {
   }
 }
 
+// Evento que actualiza todos los valores de las señales EEG
 public void eegEvent(int delta_, int theta_, int low_alpha_, 
 int high_alpha_, int low_beta_, int high_beta_, int low_gamma_, int mid_gamma_) {
-  println("hola");
   delta.add(delta_);
   if (delta.size() > numSamples) delta.remove(0);
   theta.add(theta_);
